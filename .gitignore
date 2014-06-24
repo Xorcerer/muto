@@ -1,0 +1,6 @@
+*.sln
+*.booproj
+*.csproj
+
+Temp/
+Library/
