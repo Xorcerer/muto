@@ -166,6 +166,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b77f05b0046e47b694531aa9615b919, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CellPrefab: {fileID: 0}
+  CellPrefab: {fileID: 100000, guid: 3c3f657db09b74139b04b8443c4d3f3b, type: 2}
   CellWidth: 10
   CellHeight: 10

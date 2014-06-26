@@ -1,6 +1,7 @@
 *.sln
 *.booproj
 *.csproj
+*.userprefs
 
 Temp/
 Library/
