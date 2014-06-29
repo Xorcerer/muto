@@ -1,37 +1,45 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 public class MainCamera : MonoBehaviour
 {
 	public GameObject Heroine; 
 	public GameObject Camera;
-	public float DISTANCE_TO_HEROINE_MIN;
+	public float CameraHeight;
+	public float FollowSpeed;
 
 	void Start ()
 	{
-	
 	}
 
 	void FixedUpdate ()
 	{
-		var distance = Vector3.Distance (Camera.transform.position, Heroine.transform.position);
-		var closeEnough = 
-			DISTANCE_TO_HEROINE_MIN - float.Epsilon < distance &&
-				distance < DISTANCE_TO_HEROINE_MIN + float.Epsilon;
+		var projectionCamera = new Vector2 (Camera.transform.position.x, Camera.transform.position.y);
+		var projectionPlayer = new Vector2 (Heroine.transform.position.x, Heroine.transform.position.y);
+		var distance = Vector2.Distance (projectionCamera, projectionPlayer);
+		var closeEnough = - float.Epsilon < distance && distance < float.Epsilon;
 
 		if (!closeEnough)
 		{
-			var h2c = Camera.transform.position - Heroine.transform.position;
-			h2c.Normalize();
-			var delta = h2c * DISTANCE_TO_HEROINE_MIN;
-			var dest = Heroine.transform.position - Camera.transform.position + h2c;
+			var newPosition = Vector2.Lerp (
+				projectionCamera,
+				projectionPlayer,
+				System.Math.Min(1.0f, FollowSpeed * Time.fixedDeltaTime));
 
-			Camera.transform.position = Vector3.Lerp (
-				Camera.transform.position,
-				dest,
-				0.5f * Time.fixedDeltaTime);
+			Camera.transform.position = new Vector3(newPosition.x, newPosition.y, CameraHeight);
+		}
+		else
+		{
+			if(CameraHeight - float.Epsilon < Camera.transform.position.z && Camera.transform.position.z < CameraHeight + float.Epsilon)
+			{
+			}
+			else
+			{
+				Camera.transform.position = new Vector3(Camera.transform.position.x, Camera.transform.position.y, CameraHeight);
+			}
 		}
 
-		Camera.transform.LookAt (Heroine.transform);
+		Camera.transform.LookAt (Heroine.transform.position);
 	}
 }
