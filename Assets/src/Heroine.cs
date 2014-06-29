@@ -6,9 +6,6 @@ using Muto.Logic;
 public class Heroine : MonoBehaviour, GameUnit
 {
 	public GameObject Player;
-	public Vector3 PlayerFaceDirection;
-	
-	public const int MAX_VELOCITY = 5;
 
 	event Action<GameUnit, Position2D> Moved;
 	event Action<GameUnit> Destroyed;
@@ -17,7 +14,9 @@ public class Heroine : MonoBehaviour, GameUnit
 	{
 		get
 		{
-			return new Position2D((int)Player.rigidbody.position.x, (int)Player.rigidbody.position.z);
+			return new Position2D(
+				(int)Player.transform.position.x,
+				(int)Player.transform.position.y);
 		}
 	}
 
@@ -47,40 +46,34 @@ public class Heroine : MonoBehaviour, GameUnit
 	
 	void Start ()
 	{
-		PlayerFaceDirection = new Vector3 (0.0f, 0.0f, 1.0f);
 	}
 	
 	void FixedUpdate()
 	{
-		Vector3 force = Vector3.zero;
+		DetectInputAndChangePhysicalState ();
+	}
 
+	void DetectInputAndChangePhysicalState()
+	{
+		var velocity = Vector2.zero;
+		
 		if (Input.GetKey (KeyCode.A) || Input.GetKey (KeyCode.LeftArrow))
 		{
-			force = Vector3.Cross(PlayerFaceDirection, Vector3.up);
+			velocity += -Vector2.right;
 		}
-		else if (Input.GetKey (KeyCode.S) || Input.GetKey (KeyCode.DownArrow))
+		if (Input.GetKey (KeyCode.S) || Input.GetKey (KeyCode.DownArrow))
 		{
-			force = -PlayerFaceDirection;
+			velocity += -Vector2.up;
 		}
-		else if (Input.GetKey (KeyCode.D) || Input.GetKey (KeyCode.RightArrow))
+		if (Input.GetKey (KeyCode.D) || Input.GetKey (KeyCode.RightArrow))
 		{
-			force = Vector3.Cross(Vector3.up, PlayerFaceDirection);
+			velocity += Vector2.right;
 		}
-		else if (Input.GetKey (KeyCode.W) || Input.GetKey (KeyCode.UpArrow))
+		if (Input.GetKey (KeyCode.W) || Input.GetKey (KeyCode.UpArrow))
 		{
-			force = PlayerFaceDirection;
+			velocity += Vector2.up;
 		}
 		
-		Player.rigidbody.AddForce (force);
-		if (Player.rigidbody.velocity.magnitude > MAX_VELOCITY)
-		{
-			Player.rigidbody.velocity.Normalize();
-			Player.rigidbody.velocity *= MAX_VELOCITY;
-		}
-		
-		if (Vector3.Dot (PlayerFaceDirection, Player.rigidbody.velocity) < 0)
-		{
-			PlayerFaceDirection = Player.rigidbody.velocity;
-		}
+		Player.rigidbody2D.velocity = velocity;
 	}
 }
