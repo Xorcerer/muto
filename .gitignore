@@ -5,3 +5,7 @@
 
 Temp/
 Library/
+
+# Elm
+elm/build/
+elm/cache/
