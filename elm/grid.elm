@@ -22,6 +22,7 @@ cellWidth = boardWidth / blockCountPerRow
 
 cw : Float
 cw = cellWidth
+
 hcw : Float
 hcw = cw / 2
 
@@ -42,14 +43,24 @@ updateBullet b = let newBullet = {x = b.x + b.dx, y = b.y + b.dy, dx = b.dx, dy 
                     then Nothing
                     else Just newBullet
 
+movePlayer : { x:Int, y:Int } -> Player -> Player
+movePlayer d player =
+  let clamp_ = clamp -hbcpr (hbcpr - 1)
+  in { player |
+      x <- clamp_ player.x + toFloat d.x,
+      y <- clamp_ player.y + toFloat d.y}
+
 square : Path
-square = path [ (hcw, hcw), (hcw,-hcw), (-hcw,-hcw), (-hcw,hcw), (hcw, hcw) ]
+square = path [(hcw, hcw), (hcw,-hcw), (-hcw,-hcw), (-hcw,hcw), (hcw, hcw)]
 
 blueSquare : Form
 blueSquare = traced (solid blue) square
 
 getPlayerSquare : Player -> Form
-getPlayerSquare p = move (p.x * cw + hcw, p.y * cw + hcw) (traced (solid red) square)
+getPlayerSquare p =
+  move (p.x * cw + hcw, p.y * cw + hcw)
+  <| filled red
+  <| circle hcw
 
 showBullet : Maybe Bullet -> Form
 showBullet b = move (b.x, b.y) (traced (solid blue) square)
@@ -58,11 +69,14 @@ seq n = map ((*) cw) [-n / 2..(n - 1) / 2]
 getBoard x y = map (\y' -> map (\x' -> (x', y')) (seq x)) (seq y)
 
 board = map (\p -> move p blueSquare)
-    (flatten (getBoard blockCountPerRow blockCountPerRow))
+  <| flatten
+  <| getBoard blockCountPerRow blockCountPerRow
 
 playerState = foldp movePlayer player Keyboard.arrows
 
-display (w,h) p = container w h middle (collage boardWidth boardWidth (board ++ [getPlayerSquare p]))
+display (w,h) p = container w h middle
+  <| collage boardWidth boardWidth
+  <| board ++ [getPlayerSquare p]
 
 main : Signal Element
 main = lift2 display Window.dimensions playerState
