@@ -1,5 +1,6 @@
 import Keyboard
 import Window
+import Char
 
 
 flatten l =
@@ -29,6 +30,9 @@ hcw = cw / 2
 player : Player
 player = {x = 0, y = 0}
 
+bullets : [Bullet]
+bullets = []
+
 myClamp = clamp -hbcpr (hbcpr - 1)
 
 movePlayer d player = {player | x <- myClamp player.x + toFloat d.x,
@@ -37,18 +41,17 @@ movePlayer d player = {player | x <- myClamp player.x + toFloat d.x,
 fire : {x: Float, y:Float} -> {x: Float, y: Float} -> Bullet
 fire position direction = {x = position.x, y = position.y, dx = direction.x, dy = direction.y}
 
+updateBullets : [Bullet] -> [Bullet]
+updateBullets bullets = filterMap updateBullet bullets
+
 updateBullet : Bullet -> Maybe Bullet
 updateBullet b = let newBullet = {x = b.x + b.dx, y = b.y + b.dy, dx = b.dx, dy = b.dy}
                 in if (/=) (myClamp newBullet.x) newBullet.x || (/=) (myClamp newBullet.x) newBullet.x
                     then Nothing
                     else Just newBullet
 
-movePlayer : { x:Int, y:Int } -> Player -> Player
-movePlayer d player =
-  let clamp_ = clamp -hbcpr (hbcpr - 1)
-  in { player |
-      x <- clamp_ player.x + toFloat d.x,
-      y <- clamp_ player.y + toFloat d.y}
+updateBullet_ : Player -> Bullet -> Bullet
+updateBullet_ player bullet = {bullet | x <- player.x, y <- player.y}
 
 square : Path
 square = path [(hcw, hcw), (hcw,-hcw), (-hcw,-hcw), (-hcw,hcw), (hcw, hcw)]
@@ -56,14 +59,20 @@ square = path [(hcw, hcw), (hcw,-hcw), (-hcw,-hcw), (-hcw,hcw), (hcw, hcw)]
 blueSquare : Form
 blueSquare = traced (solid blue) square
 
-getPlayerSquare : Player -> Form
-getPlayerSquare p =
+showPlayer : Player -> Form
+showPlayer p =
   move (p.x * cw + hcw, p.y * cw + hcw)
   <| filled red
   <| circle hcw
 
-showBullet : Maybe Bullet -> Form
-showBullet b = move (b.x, b.y) (traced (solid blue) square)
+showBullets : [Bullet] -> [Form]
+showBullets bs = map showBullet bs
+
+showBullet : Bullet -> Form
+showBullet b =
+  move (b.x * cw + hcw, b.y * cw + hcw)
+  <| filled blue
+  <| circle hcw
 
 seq n = map ((*) cw) [-n / 2..(n - 1) / 2]
 getBoard x y = map (\y' -> map (\x' -> (x', y')) (seq x)) (seq y)
@@ -72,11 +81,16 @@ board = map (\p -> move p blueSquare)
   <| flatten
   <| getBoard blockCountPerRow blockCountPerRow
 
+bullet = fire {x = 0, y = 0} {x = 0, y = 0}
 playerState = foldp movePlayer player Keyboard.arrows
 
-display (w,h) p = container w h middle
+bulletsState : Signal Bullet
+bulletsState = sampleOn (Keyboard.isDown (Char.toCode ' ')) (foldp updateBullet_ bullet playerState)
+
+display : (Int, Int) -> Player -> Bullet -> Element
+display (w,h) p bs = container w h middle
   <| collage boardWidth boardWidth
-  <| board ++ [getPlayerSquare p]
+  <| board ++ [showPlayer p] ++ (showBullets [bs])
 
 main : Signal Element
-main = lift2 display Window.dimensions playerState
+main = lift3 display Window.dimensions playerState bulletsState
