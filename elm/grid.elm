@@ -3,6 +3,7 @@ import Window
 import Char
 
 
+-- TODO: seperate code to files, apply MVC to code.
 flatten l =
     case l of
         [] -> []
@@ -56,9 +57,6 @@ updateBullet b = let newBullet = {x = b.x + b.dx, y = b.y + b.dy, dx = b.dx, dy 
                     then Nothing
                     else Just newBullet
 
-updateBullet_ : Player -> Bullet -> Bullet
-updateBullet_ player bullet = {bullet | x <- player.pos.x, y <- player.pos.y}
-
 square : Path
 square = path [(hcw, hcw), (hcw, -hcw), (-hcw, -hcw), (-hcw, hcw), (hcw, hcw)]
 
@@ -89,6 +87,7 @@ board = map (\p -> move p blueSquare)
 
 playerState = foldp movePlayer player Keyboard.arrows
 
+-- TODO: combine arrow keys, space key, fps signals together.
 data BulletUpdate = Time | FiredBy Player
 
 fireUnit = sampleOn (Keyboard.isDown <| Char.toCode ' ') playerState
