@@ -90,7 +90,8 @@ playerState = foldp movePlayer player Keyboard.arrows
 -- TODO: combine arrow keys, space key, fps signals together.
 data BulletUpdate = Time | FiredBy Player
 
-fireUnit = sampleOn (Keyboard.isDown <| Char.toCode ' ') playerState
+spaceDown = Keyboard.isDown <| Char.toCode ' '
+fireUnit = keepWhen spaceDown player (sampleOn spaceDown playerState)
 
 bulletUpdate : Signal BulletUpdate
 bulletUpdate = merge
