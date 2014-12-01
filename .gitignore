@@ -7,5 +7,7 @@ Temp/
 Library/
 
 # Elm
+build/
+cache/
 elm/build/
 elm/cache/

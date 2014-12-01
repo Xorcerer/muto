@@ -10,9 +10,12 @@ flatten l =
         h::t -> h ++ flatten t
 
 type Vector = { x : Float, y : Float }
-type Player = { pos : Vector }
 
-type Bullet = { x : Float, y : Float, dx: Float, dy: Float }
+addVector : Vector -> Vector -> Vector
+addVector v1 v2 = {v1 | x <- v1.x + v2.x, y <- v1.y + v2.y}
+
+type Player = { pos: Vector }
+type Bullet = { pos: Vector, direction: Vector }
 
 
 blockCountPerRow = 10
@@ -36,14 +39,19 @@ bullets : [Bullet]
 bullets = []
 
 myClamp = clamp -hbcpr (hbcpr - 1)
+clampVector : Vector -> Vector
+clampVector v = {v | x <- myClamp v.x, y <- myClamp v.y}
+
+putObject : Vector -> Form -> Form
+putObject pos = move (pos.x * cw + hcw, pos.y * cw + hcw)
 
 outOfBoard x = myClamp x /= x
-movePlayer d player = {player | pos <- { x = myClamp player.pos.x + toFloat d.x,
-                                         y = myClamp player.pos.y + toFloat d.y}}
-
+movePlayer direction player =
+    let d = {x = toFloat direction.x, y = toFloat direction.y} in
+    {player | pos <- clampVector <| addVector player.pos d}
 
 fire : Player -> {x: Float, y: Float} -> Bullet
-fire p direction = {x = p.pos.x, y = p.pos.y, dx = direction.x, dy = direction.y}
+fire p d = { pos = p.pos, direction = d}
 
 updateBullets : BulletUpdate -> [Bullet] -> [Bullet]
 updateBullets event bullets =
@@ -52,8 +60,8 @@ updateBullets event bullets =
     Time -> filterMap updateBullet bullets
 
 updateBullet : Bullet -> Maybe Bullet
-updateBullet b = let newBullet = {x = b.x + b.dx, y = b.y + b.dy, dx = b.dx, dy = b.dy}
-                in if outOfBoard newBullet.x || outOfBoard newBullet.y
+updateBullet b = let newBullet = {b | pos <- addVector b.pos b.direction}
+                in if outOfBoard newBullet.pos.x || outOfBoard newBullet.pos.y
                     then Nothing
                     else Just newBullet
 
@@ -65,7 +73,7 @@ blueSquare = traced (solid blue) square
 
 showPlayer : Player -> Form
 showPlayer p =
-  move (p.pos.x * cw + hcw, p.pos.y * cw + hcw)
+  putObject p.pos
   <| filled red
   <| circle hcw
 
@@ -74,7 +82,7 @@ showBullets bs = map showBullet bs
 
 showBullet : Bullet -> Form
 showBullet b =
-  move (b.x * cw + hcw, b.y * cw + hcw)
+  putObject b.pos
   <| filled blue
   <| circle (hcw / 2)
 
@@ -95,7 +103,7 @@ fireUnit = keepWhen spaceDown player (sampleOn spaceDown playerState)
 
 bulletUpdate : Signal BulletUpdate
 bulletUpdate = merge
-  (lift (always Time) (fps 2))
+  (lift (always Time) (fps 10))
   (lift FiredBy fireUnit)
 
 bulletsState : Signal [Bullet]
