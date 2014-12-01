@@ -65,31 +65,22 @@ updateBullet b = let newBullet = {b | pos <- addVector b.pos b.direction}
                     then Nothing
                     else Just newBullet
 
-square : Path
-square = path [(hcw, hcw), (hcw, -hcw), (-hcw, -hcw), (-hcw, hcw), (hcw, hcw)]
-
 blueSquare : Form
-blueSquare = traced (solid blue) square
+blueSquare = filled lightBlue <| rect (cw - 1) (cw - 1)
 
 showPlayer : Player -> Form
-showPlayer p =
-  putObject p.pos
-  <| filled red
-  <| circle hcw
+showPlayer p = putObject p.pos <| filled red <| circle hcw
 
 showBullets : [Bullet] -> [Form]
 showBullets bs = map showBullet bs
 
 showBullet : Bullet -> Form
-showBullet b =
-  putObject b.pos
-  <| filled blue
-  <| circle (hcw / 2)
+showBullet b = putObject b.pos <| filled lightRed <| circle (hcw / 2)
 
-seq n = map ((*) cw) [-n / 2..(n - 1) / 2]
-getBoard x y = map (\y' -> map (\x' -> (x', y')) (seq x)) (seq y)
+seq n = [-n / 2..(n - 2) / 2]
+getBoard x y = map (\y' -> map (\x' -> {x = x', y = y'}) (seq x)) (seq y)
 
-board = map (\p -> move p blueSquare)
+board = map (\p -> putObject p blueSquare)
   <| flatten
   <| getBoard blockCountPerRow blockCountPerRow
 
@@ -98,8 +89,7 @@ playerState = foldp movePlayer player Keyboard.arrows
 -- TODO: combine arrow keys, space key, fps signals together.
 data BulletUpdate = Time | FiredBy Player
 
-spaceDown = Keyboard.isDown <| Char.toCode ' '
-fireUnit = keepWhen spaceDown player (sampleOn spaceDown playerState)
+fireUnit = keepWhen Keyboard.space player (sampleOn Keyboard.space playerState)
 
 bulletUpdate : Signal BulletUpdate
 bulletUpdate = merge
