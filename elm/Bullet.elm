@@ -6,7 +6,7 @@ import Vector (Vector, addVector)
 
 type Bullet = { pos: Vector, direction: Vector }
 
-data Update = FrameUpdate | FiredAt Vector
+data Update = FrameUpdate | FireAt Vector
 
 type State =
   { bulletRadius: Float, bullets: [Bullet],
@@ -23,6 +23,7 @@ initialize bulletRedius outOfBoardPredicate =
 fire : Vector -> Vector -> Bullet
 fire p d = { pos = p, direction = d}
 
+-- FIXME: putObject should not pass from outside, we should seperate View and model.
 show : (Vector -> Form -> Form) -> State -> [Form]
 show putObject {bullets, bulletRadius} = map (showBullet putObject bulletRadius) bullets
 
@@ -32,7 +33,7 @@ showBullet putObject r b = putObject b.pos <| filled lightRed <| circle (r / 2)
 update : Update -> State -> State
 update event state =
   let bullets = case event of
-    FiredAt pos -> fire pos {x=0, y=1} :: state.bullets
+    FireAt pos -> fire pos {x=0, y=1} :: state.bullets
     FrameUpdate -> filterMap (updateBullet state.outOfBoardPredicate) state.bullets
   in {state | bullets <- bullets}
 

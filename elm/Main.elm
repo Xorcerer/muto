@@ -7,6 +7,12 @@ import Bullet
 
 -- TODO: seperate code to files, apply MVC to code.
 type Player = { pos: Vector }
+type Direction = {x: Int, y: Int}
+
+type State = { player: Player, bulletState: Bullet.State }
+
+data Update = Fire | FrameUpdate | Move Direction
+
 
 blockCountPerRow = 10
 bcpr = blockCountPerRow
@@ -21,9 +27,6 @@ cw = cellWidth
 
 hcw : Float
 hcw = cw / 2
-
-player : Player
-player = { pos = { x = 0, y = 0} }
 
 myClamp = clamp -hbcpr (hbcpr - 1)
 clampVector : Vector -> Vector
@@ -51,25 +54,38 @@ board = map (\p -> putObject p blueSquare)
   <| flatten
   <| getBoard blockCountPerRow blockCountPerRow
 
-playerState = foldp movePlayer player Keyboard.arrows
+input : Signal Update
+input = merges
+  [ (lift (always FrameUpdate) (fps 10)),
+    (keepWhen Keyboard.space Fire <| lift (always Fire) Keyboard.space),
+    (lift Move Keyboard.arrows)]
 
-fireUnit = keepWhen Keyboard.space player (sampleOn Keyboard.space playerState)
+update : Update -> State -> State
+update u state =
+  case u of
+    FrameUpdate ->
+      {state |
+        bulletState <- Bullet.update Bullet.FrameUpdate state.bulletState}
+    Fire ->
+      {state |
+        bulletState <-
+          Bullet.update (Bullet.FireAt state.player.pos) state.bulletState}
+    Move d ->
+      {state |
+        player <- movePlayer d state.player}
 
-bulletUpdate : Signal Bullet.Update
-bulletUpdate = merge
-  (lift (always Bullet.FrameUpdate) (fps 10))
-  (lift (\p -> Bullet.FiredAt p.pos) fireUnit)
+player : Player
+player = { pos = { x = 0, y = 0} }
 
+bullets : Bullet.State
 bullets = Bullet.initialize hcw outOfBoard
 
-bulletState : Signal Bullet.State
-bulletState = foldp Bullet.update bullets bulletUpdate
+state = {bulletState = Bullet.initialize hcw outOfBoard, player = player}
 
---state = {bulletState = Bullet.initialize hcw outOfBoard, }
-display : (Int, Int) -> Player -> Bullet.State -> Element
-display (w,h) p bs = container w h middle
+display : (Int, Int) -> State -> Element
+display (w,h) s = container w h middle
   <| collage boardWidth boardWidth
-  <| board ++ [showPlayer p] ++ Bullet.show putObject bs
+  <| board ++ [showPlayer s.player] ++ Bullet.show putObject s.bulletState
 
 main : Signal Element
-main = lift3 display Window.dimensions playerState bulletState
+main = lift2 display Window.dimensions (foldp update state input)
