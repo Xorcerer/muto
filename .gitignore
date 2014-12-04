@@ -6,6 +6,9 @@
 Temp/
 Library/
 
+# Idea
+.idea/
+
 # Elm
 build/
 cache/
