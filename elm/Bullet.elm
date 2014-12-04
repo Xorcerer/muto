@@ -9,26 +9,25 @@ type Bullet = { pos: Vector, direction: Vector }
 data Update = FrameUpdate | FireAt Vector
 
 type State =
-  { bulletRadius: Float, bullets: [Bullet],
+  { bullets: [Bullet],
     outOfBoardPredicate: Vector -> Bool
   }
 
-initialize : Float -> (Vector -> Bool) -> State
-initialize bulletRedius outOfBoardPredicate =
-  { bulletRadius = bulletRedius,
-    outOfBoardPredicate = outOfBoardPredicate,
+initialize : (Vector -> Bool) -> State
+initialize outOfBoardPredicate =
+  { outOfBoardPredicate = outOfBoardPredicate,
     bullets = []
   }
 
 fire : Vector -> Vector -> Bullet
-fire p d = { pos = p, direction = d}
+fire p d = { pos = p, direction = d }
 
 -- FIXME: putObject should not pass from outside, we should seperate View and model.
-show : (Vector -> Form -> Form) -> State -> [Form]
-show putObject {bullets, bulletRadius} = map (showBullet putObject bulletRadius) bullets
+show : (Vector -> Form -> Form) -> Float -> State -> [Form]
+show putObject radius {bullets} = map (showBullet putObject radius) bullets
 
 showBullet : (Vector -> Form -> Form) -> Float -> Bullet -> Form
-showBullet putObject r b = putObject b.pos <| filled lightRed <| circle (r / 2)
+showBullet putObject r b = putObject b.pos <| filled lightRed <| circle r
 
 update : Update -> State -> State
 update event state =

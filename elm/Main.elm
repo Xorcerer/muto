@@ -1,17 +1,17 @@
 import Keyboard
 import Window
 import Char
+import Maybe (maybe)
 import ListHelper (flatten)
 import Vector (Vector, addVector)
+import BasicTypes
 import Bullet
+import Player
 
--- TODO: seperate code to files, apply MVC to code.
-type Player = { pos: Vector }
-type Direction = {x: Int, y: Int}
 
-type State = { player: Player, bulletState: Bullet.State }
+type State = { playerState: Player.State, bulletState: Bullet.State }
 
-data Update = Fire | FrameUpdate | Move Direction
+data Update = Fire | FrameUpdate | Move BasicTypes.Direction
 
 
 blockCountPerRow = 10
@@ -29,26 +29,18 @@ hcw : Float
 hcw = cw / 2
 
 myClamp = clamp -hbcpr (hbcpr - 1)
-clampVector : Vector -> Vector
-clampVector v = {v | x <- myClamp v.x, y <- myClamp v.y}
 
 putObject : Vector -> Form -> Form
 putObject pos = move (pos.x * cw + hcw, pos.y * cw + hcw)
 
+outOfBoard : Vector -> Bool
 outOfBoard v = myClamp v.x /= v.x || myClamp v.y /= v.y
-
-movePlayer direction player =
-    let d = {x = toFloat direction.x, y = toFloat direction.y} in
-    {player | pos <- clampVector <| addVector player.pos d}
-
-blueSquare : Form
-blueSquare = filled lightBlue <| rect (cw - 1) (cw - 1)
-
-showPlayer : Player -> Form
-showPlayer p = putObject p.pos <| filled red <| circle hcw
 
 seq n = [-n / 2..(n - 2) / 2]
 getBoard x y = map (\y' -> map (\x' -> {x = x', y = y'}) (seq x)) (seq y)
+
+blueSquare : Form
+blueSquare = filled lightBlue <| rect (cw - 1) (cw - 1)
 
 board = map (\p -> putObject p blueSquare)
   <| flatten
@@ -62,30 +54,32 @@ input = merges
 
 update : Update -> State -> State
 update u state =
-  case u of
+  let
+    pos = maybe {x=0, y=0} .pos (Player.find myPlayerId state.playerState)
+  in case u of
     FrameUpdate ->
       {state |
         bulletState <- Bullet.update Bullet.FrameUpdate state.bulletState}
     Fire ->
       {state |
-        bulletState <-
-          Bullet.update (Bullet.FireAt state.player.pos) state.bulletState}
+        bulletState <- Bullet.update (Bullet.FireAt pos) state.bulletState}
     Move d ->
-      {state |
-        player <- movePlayer d state.player}
+      {state | playerState <- Player.update (Player.Move d myPlayerId) state.playerState}
 
-player : Player
-player = { pos = { x = 0, y = 0} }
 
-bullets : Bullet.State
-bullets = Bullet.initialize hcw outOfBoard
+myPlayerId = 1
 
-state = {bulletState = Bullet.initialize hcw outOfBoard, player = player}
+playerState = Player.add {x=0, y=0} myPlayerId <| Player.initialize outOfBoard
+
+state : State
+state =
+  { bulletState = Bullet.initialize outOfBoard,
+    playerState = playerState}
 
 display : (Int, Int) -> State -> Element
 display (w,h) s = container w h middle
   <| collage boardWidth boardWidth
-  <| board ++ [showPlayer s.player] ++ Bullet.show putObject s.bulletState
+  <| board ++ Player.show putObject hcw s.playerState ++ Bullet.show putObject (hcw / 2) s.bulletState
 
 main : Signal Element
 main = lift2 display Window.dimensions (foldp update state input)
