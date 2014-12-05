@@ -8,8 +8,6 @@ import Vector (Vector, addVector)
 type PlayerId = Int
 type Player = { pos: Vector, pid: PlayerId }
 
-data Update = Move BasicTypes.Direction PlayerId
-
 type State =
   { players: [Player],
     outOfBoardPredicate: Vector -> Bool
@@ -45,11 +43,6 @@ movePlayer direction outOfBoardPredicate player =
       if outOfBoardPredicate pos
       then player
       else {player | pos <- pos}
-
-update : Update -> State -> State
-update u state =
-  case u of
-    Move d pid -> move d pid state
 
 showPlayer : (Vector -> Form -> Form) -> Float -> Player -> Form
 showPlayer putObject r p = putObject p.pos <| filled red <| circle r

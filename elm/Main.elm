@@ -64,7 +64,7 @@ update u state =
       {state |
         bulletState <- Bullet.update (Bullet.FireAt pos) state.bulletState}
     Move d ->
-      {state | playerState <- Player.update (Player.Move d myPlayerId) state.playerState}
+      {state | playerState <- Player.move d myPlayerId state.playerState}
 
 
 myPlayerId = 1
