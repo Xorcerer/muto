@@ -1,15 +1,17 @@
 module Player where
 
+import Color
 import BasicTypes
 import ListHelper
-import Vector (Vector, addVector)
+import List
+import Vector exposing (Vector, addVector)
+import Graphics.Collage as GC
 
+type alias PlayerId = Int
+type alias Player = { pos: Vector, pid: PlayerId }
 
-type PlayerId = Int
-type Player = { pos: Vector, pid: PlayerId }
-
-type State =
-  { players: [Player],
+type alias State =
+  { players: List(Player),
     outOfBoardPredicate: Vector -> Bool
   }
 
@@ -32,7 +34,7 @@ move d pid state =
       if player.pid == pid
       then movePlayer d state.outOfBoardPredicate player
       else player
-  in { state | players <- map m state.players }
+  in { state | players <- List.map m state.players }
 
 movePlayer : BasicTypes.Direction -> (Vector -> Bool) -> Player -> Player
 movePlayer direction outOfBoardPredicate player =
@@ -44,8 +46,10 @@ movePlayer direction outOfBoardPredicate player =
       then player
       else {player | pos <- pos}
 
-showPlayer : (Vector -> Form -> Form) -> Float -> Player -> Form
-showPlayer putObject r p = putObject p.pos <| filled red <| circle r
+showPlayer : (Vector -> GC.Form -> GC.Form) -> Float -> Player -> GC.Form
+showPlayer putObject r p = putObject p.pos
+  <| GC.filled Color.red
+  <| GC.circle r
 
-show : (Vector -> Form -> Form) -> Float -> State -> [Form]
-show putObject r state = map (showPlayer putObject r) state.players
+show : (Vector -> GC.Form -> GC.Form) -> Float -> State -> List(GC.Form)
+show putObject r state = List.map (showPlayer putObject r) state.players

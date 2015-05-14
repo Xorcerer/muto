@@ -1,17 +1,23 @@
 import Keyboard
 import Window
+import Graphics.Collage as GC
+import Graphics.Element as GE
 import Char
-import Maybe (maybe)
-import ListHelper (flatten)
-import Vector (Vector, addVector)
-import BasicTypes
+import Color
+import Maybe exposing (withDefault, andThen)
+import Vector exposing (Vector, addVector)
+import Basics exposing (always)
 import Bullet
+import Signal
+import Time
+
+import ListHelper exposing (flatten)
+import BasicTypes
 import Player
 
+type alias State = { playerState: Player.State, bulletState: Bullet.State }
 
-type State = { playerState: Player.State, bulletState: Bullet.State }
-
-data Update = Fire | FrameUpdate | Move BasicTypes.Direction
+type Update = Fire | FrameUpdate | Move BasicTypes.Direction
 
 
 blockCountPerRow = 10
@@ -30,32 +36,32 @@ hcw = cw / 2
 
 myClamp = clamp -hbcpr (hbcpr - 1)
 
-putObject : Vector -> Form -> Form
-putObject pos = move (pos.x * cw + hcw, pos.y * cw + hcw)
+putObject : Vector -> GC.Form -> GC.Form
+putObject pos = GC.move (pos.x * cw + hcw, pos.y * cw + hcw)
 
 outOfBoard : Vector -> Bool
 outOfBoard v = myClamp v.x /= v.x || myClamp v.y /= v.y
 
 seq n = [-n / 2..(n - 2) / 2]
-getBoard x y = map (\y' -> map (\x' -> {x = x', y = y'}) (seq x)) (seq y)
+getBoard x y = List.map (\y' -> List.map (\x' -> {x = x', y = y'}) (seq x)) (seq y)
 
-blueSquare : Form
-blueSquare = filled lightBlue <| rect (cw - 1) (cw - 1)
+blueSquare : GC.Form
+blueSquare = GC.filled Color.lightBlue <| GC.rect (cw - 1) (cw - 1)
 
-board = map (\p -> putObject p blueSquare)
+board = List.map (\p -> putObject p blueSquare)
   <| flatten
   <| getBoard blockCountPerRow blockCountPerRow
 
 input : Signal Update
-input = merges
-  [ (lift (always FrameUpdate) (fps 10)),
-    (keepWhen Keyboard.space Fire <| lift (always Fire) Keyboard.space),
-    (lift Move Keyboard.arrows)]
+input = Signal.mergeMany
+  [ (Signal.map (always FrameUpdate) (Time.fps 10)),
+    (Signal.map (always Fire) <| Signal.filter Basics.identity False Keyboard.space),
+    (Signal.map Move Keyboard.arrows)]
 
 update : Update -> State -> State
 update u state =
   let
-    pos = maybe {x=0, y=0} .pos (Player.find myPlayerId state.playerState)
+    pos = withDefault {x=0, y=0} (andThen (Player.find myPlayerId state.playerState) (\p -> Just p.pos) )
   in case u of
     FrameUpdate ->
       {state |
@@ -76,10 +82,10 @@ state =
   { bulletState = Bullet.initialize outOfBoard,
     playerState = playerState}
 
-display : (Int, Int) -> State -> Element
-display (w,h) s = container w h middle
-  <| collage boardWidth boardWidth
+display : (Int, Int) -> State -> GE.Element
+display (w,h) s = GE.container w h GE.middle
+  <| GC.collage boardWidth boardWidth
   <| board ++ Player.show putObject hcw s.playerState ++ Bullet.show putObject (hcw / 2) s.bulletState
 
-main : Signal Element
-main = lift2 display Window.dimensions (foldp update state input)
+main : Signal GE.Element
+main = Signal.map2 display Window.dimensions (Signal.foldp update state input)

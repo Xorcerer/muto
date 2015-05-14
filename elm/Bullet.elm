@@ -1,15 +1,17 @@
 module Bullet where
 
+import Color
+import List
+import Graphics.Collage as GC
+import Vector exposing (Vector, addVector)
 
-import Vector (Vector, addVector)
 
+type alias Bullet = { pos: Vector, direction: Vector }
 
-type Bullet = { pos: Vector, direction: Vector }
+type Update = FrameUpdate | FireAt Vector
 
-data Update = FrameUpdate | FireAt Vector
-
-type State =
-  { bullets: [Bullet],
+type alias State =
+  { bullets: List(Bullet),
     outOfBoardPredicate: Vector -> Bool
   }
 
@@ -23,17 +25,17 @@ fire : Vector -> Vector -> Bullet
 fire p d = { pos = p, direction = d }
 
 -- FIXME: putObject should not pass from outside, we should seperate View and model.
-show : (Vector -> Form -> Form) -> Float -> State -> [Form]
-show putObject radius {bullets} = map (showBullet putObject radius) bullets
+show : (Vector -> GC.Form -> GC.Form) -> Float -> State -> List(GC.Form)
+show putObject radius {bullets} = List.map (showBullet putObject radius) bullets
 
-showBullet : (Vector -> Form -> Form) -> Float -> Bullet -> Form
-showBullet putObject r b = putObject b.pos <| filled lightRed <| circle r
+showBullet : (Vector -> GC.Form -> GC.Form) -> Float -> Bullet -> GC.Form
+showBullet putObject r b = putObject b.pos <| GC.filled Color.lightRed <| GC.circle r
 
 update : Update -> State -> State
 update event state =
   let bullets = case event of
     FireAt pos -> fire pos {x=0, y=1} :: state.bullets
-    FrameUpdate -> filterMap (updateBullet state.outOfBoardPredicate) state.bullets
+    FrameUpdate -> List.filterMap (updateBullet state.outOfBoardPredicate) state.bullets
   in {state | bullets <- bullets}
 
 updateBullet : (Vector -> Bool) -> Bullet -> Maybe Bullet

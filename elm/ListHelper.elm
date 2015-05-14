@@ -6,7 +6,7 @@ flatten l =
         h::t -> h ++ flatten t
 
 
-find : (a -> Bool) -> [a] -> Maybe a
+find : (a -> Bool) -> List(a) -> Maybe a
 find predicate l =
   case l of
     [] -> Nothing
